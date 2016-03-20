@@ -1,34 +1,19 @@
-module Wc where
 
-import Control.Monad.State
-import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
+import Data.Char
 
-data WcState = WcState {
-  lcount :: Int,
-  wcount :: Int,
-  bcount :: Int
-}
+import qualified Data.Text    as T
+import qualified Data.Text.IO as T
 
-data WcValue = WcValue {
-  lineCount :: Int,
-  wordCount :: Int,
-  byteCount :: Int
-} deriving (Show)
+count char (chars, beforeWord, words, lines)
+    | not (isSpace char) && beforeWord = (chars + 1, False, words + 1, lines)
+    | '\n' == char                     = (chars + 1, True,  words, lines + 1)
+    | isSpace char                     = (chars + 1, True,  words, lines)
+    | otherwise                        = (chars + 1, False, words, lines)
 
-main :: IO ()
+wordCount = T.foldl (flip count) (0, True, 0, 0)
+
+pretty (c, _, w, l) = putStrLn (unwords [show l, show w, show c])
+
 main = do
-  t <- TIO.getContents
-  print $ wc t
-
-wc :: T.Text -> WcValue
-wc t = evalState (processInput (T.lines t)) initialState
-  where initialState = WcState 0 0 0
-
-processInput :: [T.Text] -> State WcState WcValue
-processInput [] = get >>= (\s -> return $ WcValue (lcount s) (wcount s) (bcount s))
-processInput (x:xs) = do
-  modify (\s -> s { lcount = (lcount s) + 1,
-                    wcount = wcount s + (length $ T.words x),
-                    bcount = bcount s + (T.length x) + 1 })
-  processInput xs
+    allInput <- T.getContents
+    pretty (wordCount allInput)
