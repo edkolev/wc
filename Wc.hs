@@ -1,7 +1,8 @@
 module Wc where
 
 import Control.Monad.State
-import Data.List
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 
 data WcState = WcState {
   lcount :: Int,
@@ -15,21 +16,19 @@ data WcValue = WcValue {
   byteCount :: Int
 } deriving (Show)
 
-wc :: String -> WcValue
-wc t = evalState (processInput (lines t)) initialState
+main :: IO ()
+main = do
+  t <- TIO.getContents
+  print $ wc t
+
+wc :: T.Text -> WcValue
+wc t = evalState (processInput (T.lines t)) initialState
   where initialState = WcState 0 0 0
 
-processInput :: [String] -> State WcState WcValue
-processInput [] = do
-  s <- get
-  return $ WcValue (lcount s) (wcount s) (bcount s)
-
+processInput :: [T.Text] -> State WcState WcValue
+processInput [] = get >>= (\s -> return $ WcValue (lcount s) (wcount s) (bcount s))
 processInput (x:xs) = do
   modify (\s -> s { lcount = (lcount s) + 1,
-                    wcount = wcount s + (length $ words x),
-                    bcount = bcount s + (length x) + 1 })
+                    wcount = wcount s + (length $ T.words x),
+                    bcount = bcount s + (T.length x) + 1 })
   processInput xs
-
-main = do
-  t <- getContents
-  print $ wc t
